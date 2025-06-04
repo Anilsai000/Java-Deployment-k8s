@@ -23,6 +23,12 @@ pipeline {
             }
         }
 
+        stage('Upload Artifact to Nexus') {
+    steps {
+        sh 'mvn deploy -DskipTests'
+    }
+}
+
         stage('SonarQube Analysis') {
             steps {
                 sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
