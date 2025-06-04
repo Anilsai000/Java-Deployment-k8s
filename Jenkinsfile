@@ -5,6 +5,7 @@ pipeline {
         ECR_REGISTRY = '${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com'
         IMAGE_NAME = 'demo-k8s-app'
         AWS_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = '014498663222'
         SONAR_TOKEN = credentials('sonar-token')
         KUBECONFIG = credentials('eks-kubeconfig')
     }
@@ -29,22 +30,23 @@ pipeline {
         }
 
         stage('Build and Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh '''
-                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                        aws configure set region $AWS_REGION
+           steps {
+              withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+              sh '''
+                aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                aws configure set region $AWS_REGION
 
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+                aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 
-                        docker build -t $IMAGE_NAME:$BUILD_NUMBER .
-                        docker tag $IMAGE_NAME:$BUILD_NUMBER $ECR_REGISTRY/$IMAGE_NAME:$BUILD_NUMBER
-                        docker push $ECR_REGISTRY/$IMAGE_NAME:$BUILD_NUMBER
-                    '''
-                }
-            }
+                docker build -t $IMAGE_NAME:$BUILD_NUMBER .
+                docker tag $IMAGE_NAME:$BUILD_NUMBER $ECR_REGISTRY/$IMAGE_NAME:$BUILD_NUMBER
+                docker push $ECR_REGISTRY/$IMAGE_NAME:$BUILD_NUMBER
+               '''
         }
+    }
+}
+
 
         stage('Deploy to EKS') {
             steps {
